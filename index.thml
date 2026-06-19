@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Spud — Quality of Life Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1c1b1b;
+    --surface: #262524;
+    --surface-2: #2f2e2c;
+    --gold: #f5a623;
+    --gold-dim: rgba(245,166,35,0.15);
+    --text: #f2f0ec;
+    --text-dim: #9b9893;
+    --border: #3a3937;
+    --red: #d85a30;
+    --amber: #ef9f27;
+    --green: #639922;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 16px 16px 100px; }
+  header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+  h1 { font-size: 22px; font-weight: 700; margin: 0; color: var(--gold); }
+  .sub { font-size: 13px; color: var(--text-dim); margin: 2px 0 0; }
+
+  .test-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-dim); }
+  .switch { position: relative; width: 36px; height: 20px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; inset: 0; background: var(--border); border-radius: 20px; cursor: pointer; transition: .2s; }
+  .slider::before { content: ''; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px; background: var(--text-dim); border-radius: 50%; transition: .2s; }
+  input:checked + .slider { background: var(--red); }
+  input:checked + .slider::before { transform: translateX(16px); background: #fff; }
+
+  .test-banner { background: var(--red); color: #fff; font-size: 13px; font-weight: 500; text-align: center; padding: 8px; border-radius: 8px; margin-bottom: 12px; display: none; }
+  .test-banner.show { display: block; }
+
+  .person-row { display: flex; gap: 8px; margin-bottom: 16px; }
+  .person-btn { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 15px; font-weight: 500; font-family: inherit; }
+  .person-btn.active { background: var(--gold); color: #1c1b1b; border-color: var(--gold); }
+
+  .status-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; display: none; }
+  .status-card.show { display: block; }
+  .status-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; padding: 4px 0; }
+  .status-row .label { color: var(--text-dim); }
+  .band { font-weight: 700; padding: 2px 8px; border-radius: 6px; font-size: 12px; }
+  .band-adequate { background: rgba(99,153,34,0.2); color: #97c459; }
+  .band-questionable { background: rgba(239,159,39,0.2); color: var(--amber); }
+  .band-concern { background: rgba(216,90,48,0.2); color: var(--red); }
+
+  .section { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+  .section-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; cursor: pointer; }
+  .section-title { font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); display: none; }
+  .dot.show { display: inline-block; }
+  .chevron { color: var(--text-dim); font-size: 14px; transition: transform .2s; }
+  .section.open .chevron { transform: rotate(180deg); }
+  .section-body { display: none; padding: 0 16px 14px; }
+  .section.open .section-body { display: block; }
+
+  .item { padding: 10px 0; border-top: 1px solid var(--border); }
+  .item:first-child { border-top: none; }
+  .item-label { font-size: 13px; color: var(--text); margin-bottom: 8px; line-height: 1.4; }
+  .seg { display: flex; gap: 6px; }
+  .seg button { flex: 1; padding: 9px 4px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-dim); font-size: 12px; font-family: inherit; }
+  .seg button.sel-0.active { background: var(--gold-dim); color: #97c459; border-color: var(--green); }
+  .seg button.sel-1.active { background: rgba(239,159,39,0.15); color: var(--amber); border-color: var(--amber); }
+  .seg button.sel-2.active { background: rgba(216,90,48,0.15); color: var(--red); border-color: var(--red); }
+
+  .footer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); border-top: 1px solid var(--border); padding: 12px 16px; max-width: 480px; margin: 0 auto; }
+  .footer-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; color: var(--text-dim); }
+  .save-btn { width: 100%; padding: 14px; border-radius: 10px; border: none; background: var(--gold); color: #1c1b1b; font-size: 15px; font-weight: 700; font-family: inherit; }
+  .save-btn:disabled { opacity: 0.5; }
+
+  .toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: var(--green); color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+
+  .history-link { text-align: center; margin: 16px 0; }
+  .history-link a { color: var(--gold); font-size: 13px; text-decoration: none; }
+
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: flex-start; justify-content: center; z-index: 10; padding: 40px 16px; overflow-y: auto; }
+  .modal.show { display: flex; }
+  .modal-card { background: var(--surface); border-radius: 12px; padding: 16px; width: 100%; max-width: 440px; }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .modal-head h2 { font-size: 16px; margin: 0; }
+  .close-btn { background: none; border: none; color: var(--text-dim); font-size: 20px; padding: 4px; }
+  .hist-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); font-size: 13px; cursor: pointer; }
+  .hist-row:first-child { border-top: none; }
+  .hist-date { color: var(--text); }
+  .day-entry { font-size: 12px; padding: 6px 0; border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: 8px; }
+  .day-entry:first-child { border-top: none; }
+  .day-entry .who { color: var(--gold); min-width: 60px; }
+  .day-entry .what { flex: 1; color: var(--text-dim); }
+  .day-entry .val { font-weight: 700; }
+  .empty { color: var(--text-dim); font-size: 13px; text-align: center; padding: 20px 0; }
+  .back-btn { background: none; border: none; color: var(--gold); font-size: 13px; padding: 0 0 12px; }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Spud</h1>
+      <p class="sub">Quality of life check</p>
+    </div>
+    <div class="test-toggle">
+      Test
+      <label class="switch">
+        <input type="checkbox" id="testMode">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </header>
+
+  <div class="test-banner" id="testBanner">Test mode — entries won't count toward real totals</div>
+
+  <div class="person-row">
+    <button class="person-btn" id="btnBruce" onclick="selectPerson('Bruce')">Bruce</button>
+    <button class="person-btn" id="btnNannette" onclick="selectPerson('Nannette')">Nannette</button>
+  </div>
+
+  <div class="status-card" id="statusCard">
+    <div class="status-row"><span class="label">Today — <span id="statusPerson"></span></span><span><span id="statusPersonTotal"></span> <span class="band" id="statusPersonBand"></span></span></div>
+    <div class="status-row"><span class="label">Today — Combined</span><span><span id="statusCombinedTotal"></span> <span class="band" id="statusCombinedBand"></span></span></div>
+  </div>
+
+  <div id="sections"></div>
+
+  <div class="history-link"><a href="#" onclick="openHistory(); return false;">View history</a></div>
+</div>
+
+<div class="footer">
+  <div class="footer-row">
+    <span>Session total</span>
+    <span id="sessionTotal">0</span>
+  </div>
+  <button class="save-btn" id="saveBtn" onclick="saveCheckIn()" disabled>Select a person first</button>
+</div>
+
+<div class="modal" id="historyModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 id="histTitle">History</h2>
+      <button class="close-btn" onclick="closeHistory()">&times;</button>
+    </div>
+    <div id="histBody"><div class="empty">Loading...</div></div>
+  </div>
+</div>
+
+<script>
+// ===== CONFIG =====
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx-GL_9uQBWNSpZL3KTpWUXgjLXzB0enTevz3K5VNaCUSyDaw5aFB5Kt3sa5ocDOR2ZlaXu/exec';
+
+const SECTIONS = [
+  { name: 'Social Functions', items: [
+    {id:1, short:'Social_Family', text:'Desire to be with the family has not changed'},
+    {id:2, short:'Social_Interact', text:'Interacts normally with family or other pets (no increased aggression)'}
+  ]},
+  { name: 'Health', items: [
+    {id:3, short:'Health_Breathing', text:'No changes in breathing or panting patterns'},
+    {id:4, short:'Health_Pain', text:'No outward signs of pain (excessive panting/pacing/whining)'},
+    {id:5, short:'Health_Pacing', text:'No pacing around the house'},
+    {id:6, short:'Health_Condition', text:'Overall condition has not changed recently'}
+  ]},
+  { name: 'Mental Health', items: [
+    {id:7, short:'Mental_Play', text:'Enjoys normal play activities'},
+    {id:8, short:'Mental_Dislikes', text:'Still dislikes the same things (unchanged reactions)'},
+    {id:9, short:'Mental_Stress', text:'No outward signs of stress or anxiety'},
+    {id:10, short:'Mental_Confusion', text:'Does not seem confused or apathetic'},
+    {id:11, short:'Mental_Night', text:'Nighttime activity is normal'}
+  ]},
+  { name: 'Natural Functions', items: [
+    {id:12, short:'Natural_Appetite', text:'Appetite has stayed the same'},
+    {id:13, short:'Natural_Drinking', text:'Drinking has stayed the same'},
+    {id:14, short:'Natural_Urination', text:'Normal urination habits'},
+    {id:15, short:'Natural_Bowel', text:'Normal bowel movement habits'},
+    {id:16, short:'Natural_Ambulate', text:'Ability to ambulate has stayed the same'}
+  ]}
+];
+
+let currentPerson = null;
+let values = {}; // item_id -> 0/1/2
+SECTIONS.forEach(s => s.items.forEach(i => values[i.id] = 0));
+
+function buildSections() {
+  const container = document.getElementById('sections');
+  container.innerHTML = SECTIONS.map((sec, si) => `
+    <div class="section" id="sec-${si}">
+      <div class="section-head" onclick="toggleSection(${si})">
+        <span class="section-title"><span class="dot" id="dot-${si}"></span>${sec.name}</span>
+        <span class="chevron">&#9662;</span>
+      </div>
+      <div class="section-body">
+        ${sec.items.map(item => `
+          <div class="item">
+            <div class="item-label">${item.text}</div>
+            <div class="seg">
+              <button class="sel-0 active" onclick="setValue(${item.id}, 0, ${si})">Normal</button>
+              <button class="sel-1" onclick="setValue(${item.id}, 1, ${si})">Some change</button>
+              <button class="sel-2" onclick="setValue(${item.id}, 2, ${si})">Concern</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleSection(si) {
+  document.getElementById(`sec-${si}`).classList.toggle('open');
+}
+
+function setValue(itemId, val, si) {
+  values[itemId] = val;
+  const seg = [...document.querySelectorAll(`#sec-${si} .item`)].find(el =>
+    el.querySelector('.item-label')
+  );
+  // update buttons for this item only
+  const sectionItems = SECTIONS[si].items;
+  const idx = sectionItems.findIndex(i => i.id === itemId);
+  const itemEl = document.querySelectorAll(`#sec-${si} .item`)[idx];
+  itemEl.querySelectorAll('.seg button').forEach((btn, bi) => {
+    btn.classList.toggle('active', bi === val);
+  });
+  updateDot(si);
+  updateSessionTotal();
+}
+
+function updateDot(si) {
+  const anyNonZero = SECTIONS[si].items.some(i => values[i.id] > 0);
+  document.getElementById(`dot-${si}`).classList.toggle('show', anyNonZero);
+}
+
+function updateSessionTotal() {
+  const total = Object.values(values).reduce((a,b) => a+b, 0);
+  document.getElementById('sessionTotal').textContent = total;
+}
+
+function selectPerson(p) {
+  currentPerson = p;
+  document.getElementById('btnBruce').classList.toggle('active', p === 'Bruce');
+  document.getElementById('btnNannette').classList.toggle('active', p === 'Nannette');
+  document.getElementById('saveBtn').disabled = false;
+  document.getElementById('saveBtn').textContent = `Save check-in for ${p}`;
+  fetchToday(p);
+}
+
+document.getElementById('testMode').addEventListener('change', e => {
+  document.getElementById('testBanner').classList.toggle('show', e.target.checked);
+});
+
+function bandClass(band) {
+  if (band === 'Adequate') return 'band-adequate';
+  if (band === 'Questionable') return 'band-questionable';
+  return 'band-concern';
+}
+
+async function fetchToday(person) {
+  if (SCRIPT_URL.indexOf('PASTE_YOUR') === 0) return;
+  try {
+    const res = await fetch(`${SCRIPT_URL}?action=today`);
+    const data = await res.json();
+    document.getElementById('statusCard').classList.add('show');
+    document.getElementById('statusPerson').textContent = person;
+    const personTotal = person === 'Bruce' ? data.bruceTotal : data.nannetteTotal;
+    const personBand = person === 'Bruce' ? data.bruceBand : data.nannetteBand;
+    document.getElementById('statusPersonTotal').textContent = personTotal;
+    document.getElementById('statusPersonBand').textContent = personBand;
+    document.getElementById('statusPersonBand').className = 'band ' + bandClass(personBand);
+    document.getElementById('statusCombinedTotal').textContent = data.combinedTotal;
+    document.getElementById('statusCombinedBand').textContent = data.combinedBand;
+    document.getElementById('statusCombinedBand').className = 'band ' + bandClass(data.combinedBand);
+  } catch (err) {
+    console.error('fetchToday failed', err);
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+async function saveCheckIn() {
+  if (!currentPerson) return;
+  if (SCRIPT_URL.indexOf('PASTE_YOUR') === 0) {
+    alert('Apps Script URL not configured yet.');
+    return;
+  }
+  const isTest = document.getElementById('testMode').checked;
+  const entries = SECTIONS.flatMap(sec => sec.items.map(item => ({
+    item_id: item.id,
+    section: sec.name,
+    item: item.text,
+    short_label: item.short,
+    value: values[item.id]
+  })));
+
+  const payload = {
+    person: currentPerson,
+    mode: isTest ? 'TEST' : 'REAL',
+    entries
+  };
+
+  const saveBtn = document.getElementById('saveBtn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving...';
+
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    showToast(isTest ? 'Saved (test mode)' : 'Check-in saved');
+    // reset to defaults
+    SECTIONS.forEach(s => s.items.forEach(i => values[i.id] = 0));
+    buildSections();
+    updateSessionTotal();
+    fetchToday(currentPerson);
+  } catch (err) {
+    showToast('Save failed — check connection');
+    console.error(err);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = `Save check-in for ${currentPerson}`;
+  }
+}
+
+async function openHistory() {
+  document.getElementById('historyModal').classList.add('show');
+  document.getElementById('histTitle').textContent = 'History';
+  document.getElementById('histBody').innerHTML = '<div class="empty">Loading...</div>';
+  if (SCRIPT_URL.indexOf('PASTE_YOUR') === 0) {
+    document.getElementById('histBody').innerHTML = '<div class="empty">Apps Script URL not configured yet.</div>';
+    return;
+  }
+  try {
+    const res = await fetch(`${SCRIPT_URL}?action=history&days=30`);
+    const data = await res.json();
+    if (!data.length) {
+      document.getElementById('histBody').innerHTML = '<div class="empty">No check-ins yet.</div>';
+      return;
+    }
+    document.getElementById('histBody').innerHTML = data.map(d => `
+      <div class="hist-row" onclick="openDay('${d.date}')">
+        <span class="hist-date">${d.date}</span>
+        <span><span class="band ${bandClass(d.combinedBand)}">${d.combinedTotal} · ${d.combinedBand}</span></span>
+      </div>
+    `).join('');
+  } catch (err) {
+    document.getElementById('histBody').innerHTML = '<div class="empty">Couldn\'t load history.</div>';
+    console.error(err);
+  }
+}
+
+async function openDay(date) {
+  document.getElementById('histTitle').textContent = date;
+  document.getElementById('histBody').innerHTML = '<div class="empty">Loading...</div>';
+  try {
+    const res = await fetch(`${SCRIPT_URL}?action=day&date=${date}`);
+    const entries = await res.json();
+    const backBtn = '<button class="back-btn" onclick="openHistory()">&larr; All days</button>';
+    if (!entries.length) {
+      document.getElementById('histBody').innerHTML = backBtn + '<div class="empty">No entries.</div>';
+      return;
+    }
+    document.getElementById('histBody').innerHTML = backBtn + entries.map(e => `
+      <div class="day-entry">
+        <span class="who">${e.person}</span>
+        <span class="what">${e.short_label} · ${e.timestamp.split(' ')[1]}</span>
+        <span class="val">${e.value}</span>
+      </div>
+    `).join('');
+  } catch (err) {
+    document.getElementById('histBody').innerHTML = '<div class="empty">Couldn\'t load day.</div>';
+    console.error(err);
+  }
+}
+
+function closeHistory() {
+  document.getElementById('historyModal').classList.remove('show');
+}
+
+buildSections();
+</script>
+</body>
+</html>
